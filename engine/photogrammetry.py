@@ -37,19 +37,24 @@ Reconstruction functions
 
 
 def launch_micmac_reconstruction(micmac_path, img_dir, results_dir):
-    pass
+    function_name = 'run_mm'
+    print('RUNNING MICMAC RECONSTRUCTION')
 
 def launch_realitycapture_reconstruction(rc_path, img_dir, results_dir):
+    function_name = 'run_rc'
+    print('RUNNING REALITY CAPTURE RECONSTRUCTION')
+
     img_dir_win = '"' + img_dir + '"'
     results_dir_win = '"' + results_dir + '"'
 
-    fun_txt = 'SET MY_PATH="' + rc_path + '" \n' + '%MY_PATH% -addFolder ' + img_dir_win + ' -align ' \
-              + results_dir_win + ' --pipeline ' + ref_process + ' --forceCompute'
+    fun_txt = 'SET MY_PATH="' + rc_path + '" \n' + '%MY_PATH% -addFolder ' + img_dir_win + ' -align '
     win_function(img_dir, function_name, fun_txt)
 
 
 def launch_meshroom_reconstruction(meshroom_path, img_dir, results_dir):
     function_name = 'run_meshroom'
+    print('RUNNING MESHROOM RECONSTRUCTION')
+
     ref_process = resources.find(r'other\ref_process_v5_tag.mg')
     img_dir_win = '"' + img_dir + '"'
     results_dir_win = '"' + results_dir + '"'
@@ -60,6 +65,7 @@ def launch_meshroom_reconstruction(meshroom_path, img_dir, results_dir):
     win_function(img_dir, function_name, fun_txt)
 
 def launch_agisoft_reconstruction_with_markers(ref_path, img_dir, results_dir,opt_make_ortho = True):
+    print('RUNNING AGISOFT RECONSTRUCTION')
     # file names
     model_rgb_file = os.path.join(results_dir, 'texturedMesh.obj')
     if opt_make_ortho:
@@ -104,6 +110,7 @@ def launch_agisoft_reconstruction_with_markers(ref_path, img_dir, results_dir,op
         chk.exportRaster(ortho_rgb_file)
 
 def launch_agisoft_reconstruction(img_dir, results_dir, opt_make_ortho = False):
+    print('RUNNING AGISOFT RECONSTRUCTION')
     # file names
     model_rgb_file = os.path.join(results_dir, 'texturedMesh.obj')
     if opt_make_ortho:
@@ -144,6 +151,12 @@ def launch_agisoft_reconstruction(img_dir, results_dir, opt_make_ortho = False):
 
     # avoiding bad allocation error
 
+
+"""
+======================================================================================
+Optimization functions
+======================================================================================
+"""
 
 def rotation_workflow(cc_path, obj_path):
     # Sample point cloud on mesh

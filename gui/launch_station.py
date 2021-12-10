@@ -1,5 +1,7 @@
 """ MAIN Launch_Station APP : Defining user interaction """
 
+# TODO: Add a batch process system
+
 import os.path
 from shutil import copyfile, copytree
 import threading
@@ -21,28 +23,46 @@ file1 = open('setup.txt', 'r')
 Lines = file1.readlines()
 
 paths = []
-paths_names = ['Meshroom .exe path', 'Reality Capture .exe path', 'Reality Capture license path',
+paths_names = ['Meshroom .exe path', 'MicMac bin folder path', 'Reality Capture .exe path', 'Reality Capture license path',
                'Agisoft license path', 'cloudCompare .exe path']
-wrong_paths = [False, False, False, False, False] # By default, the setup file is considered valid (all 5 paths working)
-error_path = ''
-lines_to_check = [1, 3, 5, 7, 9]
+wrong_paths = [False, False, False, False, False, False] # By default, the setup file is considered valid (all 5 paths working)
+error_text = ''
+lines_to_check = [1, 4, 7, 10, 13, 16]
 
-for count, l in enumerate(lines_to_check ):
+for count, l in enumerate(lines_to_check):
     paths.append(Lines[l].strip())
-    if not os.path.isfile(paths[count]):
-        wrong_paths[count] = True
-        error_path += paths_names[count] + ' is not set (or wrong) \n'
+    if count == 1: # for micmac, test if folder
+        if not os.path.isdir(paths[count]):
+            wrong_paths[count] = True
+            error_text += paths_names[count] + ' is not set (or wrong) \n'
+    else:
+        if not os.path.isfile(paths[count]):
+            wrong_paths[count] = True
+            error_text += paths_names[count] + ' is not set (or wrong) \n'
 
-print(paths)
-print(wrong_paths)
-
-if error_path:
+if error_text:
     msg = QtWidgets.QMessageBox()
     msg.setWindowTitle("Oops something wrong with paths")
     msg.setIcon(QtWidgets.QMessageBox.Warning)
-    msg.setText(error_path)
+    msg.setText(error_text)
     msg.show()
 
+# Metashape license operations
+if not wrong_paths[4]:
+    # print Metashape license location
+    print('license location is: ', paths[4])
+    # add license to environment variables
+    os.putenv('agisoft_LICENSE', paths[4])
+
+# Micmac operations (add environment path if necessary)
+if not wrong_paths[1]:
+    if not paths[1] in os.environ['PATH']:
+        print('MicMac bin folder not found in environment variables...')
+        os.environ['PATH'] += ';' + paths[1]
+    else:
+        print('MicMac bin folder found in environment variables!')
+
+print(os.environ['PATH'])
 
 class TestListView(QtWidgets.QListWidget):
     dropped = QtCore.pyqtSignal(list)
@@ -101,8 +121,9 @@ class LaunchStation(QtWidgets.QMainWindow):
         self.verticalLayout.addWidget(self.listview)
 
         # add photogrammetry tools in combobox
-        self.tool_list = ['Meshroom (open source)', 'Metashape', 'Metashape with markers']
+        self.tool_list = ['Meshroom (open source)', 'Micmac (open source)', 'Metashape', 'RealityCapture']
         self.comboBox_soft.addItems(self.tool_list)
+        self.update_photog_tools() # update the enabled tools depending on the available license and the defined paths
 
         # add outputs options in combobox
         self.output_list = ['Point cloud', 'Textured mesh', 'Orthoview', 'All data']
@@ -116,6 +137,9 @@ class LaunchStation(QtWidgets.QMainWindow):
 
         # create connections (signals)
         self.create_connections()
+
+    def update_photog_tools(self):
+        pass
 
     def pictureDropped(self, l):
         for url in l:
@@ -159,7 +183,12 @@ class LaunchStation(QtWidgets.QMainWindow):
             copyfile(img,os.path.join(img_dir, img_file))
 
         # launch reconstruction
+        i = self.comboBox_soft.currentIndex() # get the user choice for the software
+        j = self.comboBox_output.currentIndex() # get the user choice for the outputs
 
+
+    def go_batch(self):
+        pass
 
 """
 OLD STUFF

@@ -21,10 +21,7 @@ Lines = file1.readlines()
 agisoft_license_path = Lines[3]
 # remove special character
 agisoft_license_path = agisoft_license_path.strip()
-print('license location is: ', agisoft_license_path)
 
-# add license to environment variables
-os.putenv('agisoft_LICENSE', agisoft_license_path)
 
 # install Metashape module if necessary
 metashape_module = res.find('other/Metashape-1.7.3-cp35.cp36.cp37.cp38-none-win_amd64.whl')

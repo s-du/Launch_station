@@ -1,11 +1,18 @@
 meshroom path:
-C:\Users\sdu\Desktop\Meshroom-2021.1.0\meshroom_batch.exe
+D:\Software\Meshroom-2021.1.0\meshroom_batch.exe
+
+MicMac path:
+D:\Software\MicMac\bin
+
 reality capture path:
 C:\Program Files\Capturing Reality\RealityCapture\RealityCapture.exe
+
 reality capture license path:
 -
+
 agisoft license path:
 C:\Program Files\Agisoft\Metashape Pro\metashape2.lic
+
 Cloudcompare path:
 C:\Program Files\CloudCompare\CloudCompare.exe
 
