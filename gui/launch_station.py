@@ -16,14 +16,33 @@ from qt_material import apply_stylesheet
 from engine import photogrammetry as ph
 import resources
 
-# load setup with different path
+# load setup file with the different paths to the photogrammetry applications + license files
 file1 = open('setup.txt', 'r')
 Lines = file1.readlines()
 
-meshroom_path = Lines[1]
-meshroom_path = meshroom_path.strip()
+paths = []
+paths_names = ['Meshroom .exe path', 'Reality Capture .exe path', 'Reality Capture license path',
+               'Agisoft license path', 'cloudCompare .exe path']
+wrong_paths = [False, False, False, False, False] # By default, the setup file is considered valid (all 5 paths working)
+error_path = ''
+lines_to_check = [1, 3, 5, 7, 9]
 
-cc_path = Lines[5]
+for count, l in enumerate(lines_to_check ):
+    paths.append(Lines[l].strip())
+    if not os.path.isfile(paths[count]):
+        wrong_paths[count] = True
+        error_path += paths_names[count] + ' is not set (or wrong) \n'
+
+print(paths)
+print(wrong_paths)
+
+if error_path:
+    msg = QtWidgets.QMessageBox()
+    msg.setWindowTitle("Oops something wrong with paths")
+    msg.setIcon(QtWidgets.QMessageBox.Warning)
+    msg.setText(error_path)
+    msg.show()
+
 
 class TestListView(QtWidgets.QListWidget):
     dropped = QtCore.pyqtSignal(list)

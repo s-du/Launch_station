@@ -13,7 +13,7 @@ from skimage.transform import rotate
 from skimage.transform import (hough_line, hough_line_peaks)
 from skimage import io
 from skimage.filters import threshold_otsu, sobel
-from skimage.filters.rank import core_cy_3d
+
 
 """
 ======================================================================================
@@ -34,6 +34,18 @@ def win_function(project_folder, function_name, fun_txt):
 Reconstruction functions
 ======================================================================================
 """
+
+
+def launch_micmac_reconstruction(micmac_path, img_dir, results_dir):
+    pass
+
+def launch_realitycapture_reconstruction(rc_path, img_dir, results_dir):
+    img_dir_win = '"' + img_dir + '"'
+    results_dir_win = '"' + results_dir + '"'
+
+    fun_txt = 'SET MY_PATH="' + rc_path + '" \n' + '%MY_PATH% -addFolder ' + img_dir_win + ' -align ' \
+              + results_dir_win + ' --pipeline ' + ref_process + ' --forceCompute'
+    win_function(img_dir, function_name, fun_txt)
 
 
 def launch_meshroom_reconstruction(meshroom_path, img_dir, results_dir):

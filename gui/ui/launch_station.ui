@@ -63,7 +63,7 @@
       </property>
       <layout class="QVBoxLayout" name="verticalLayout_3">
        <item>
-        <widget class="QComboBox" name="comboBox_soft">
+        <widget class="QComboBox" name="comboBox_output">
          <property name="minimumSize">
           <size>
            <width>250</width>
@@ -82,13 +82,13 @@
       </property>
       <layout class="QVBoxLayout" name="verticalLayout_4">
        <item>
-        <widget class="QComboBox" name="comboBox_software"/>
+        <widget class="QComboBox" name="comboBox_soft"/>
        </item>
       </layout>
      </widget>
     </item>
     <item>
-     <widget class="QPushButton" name="pushButton">
+     <widget class="QPushButton" name="pushButton_go">
       <property name="text">
        <string>Go!</string>
       </property>
@@ -102,11 +102,53 @@
      <x>0</x>
      <y>0</y>
      <width>424</width>
-     <height>26</height>
+     <height>21</height>
     </rect>
    </property>
+   <widget class="QMenu" name="menuAdd_Agisoft_Metashape_License">
+    <property name="title">
+     <string>Applications paths</string>
+    </property>
+    <addaction name="actionPath_to_Meshroom"/>
+    <addaction name="actionPath_to_Reality_Capture"/>
+    <addaction name="actionPath_to_CloudCompare"/>
+   </widget>
+   <widget class="QMenu" name="menuLicense_files">
+    <property name="title">
+     <string>License files</string>
+    </property>
+    <addaction name="actionSelect_Reality_Capture_license_file"/>
+    <addaction name="actionSelect_Agisoft_Metashape_license_file"/>
+   </widget>
+   <addaction name="menuAdd_Agisoft_Metashape_License"/>
+   <addaction name="menuLicense_files"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
+  <action name="actionSelect_Reality_Capture_license_file">
+   <property name="text">
+    <string>Select Reality Capture license file</string>
+   </property>
+  </action>
+  <action name="actionPath_to_Meshroom">
+   <property name="text">
+    <string>Path to Meshroom</string>
+   </property>
+  </action>
+  <action name="actionPath_to_Reality_Capture">
+   <property name="text">
+    <string>Path to Reality Capture</string>
+   </property>
+  </action>
+  <action name="actionPath_to_CloudCompare">
+   <property name="text">
+    <string>Path to CloudCompare</string>
+   </property>
+  </action>
+  <action name="actionSelect_Agisoft_Metashape_license_file">
+   <property name="text">
+    <string>Select Agisoft Metashape license file</string>
+   </property>
+  </action>
  </widget>
  <layoutdefault spacing="7" margin="11"/>
  <resources/>
