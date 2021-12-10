@@ -186,6 +186,7 @@ class LaunchStation(QtWidgets.QMainWindow):
         i = self.comboBox_soft.currentIndex() # get the user choice for the software
         j = self.comboBox_output.currentIndex() # get the user choice for the outputs
 
+        ph.launch_micmac_reconstruction(img_dir, out_dir)
 
     def go_batch(self):
         pass

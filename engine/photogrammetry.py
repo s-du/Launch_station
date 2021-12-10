@@ -36,9 +36,14 @@ Reconstruction functions
 """
 
 
-def launch_micmac_reconstruction(micmac_path, img_dir, results_dir):
+def launch_micmac_reconstruction(img_dir, results_dir):
     function_name = 'run_mm'
     print('RUNNING MICMAC RECONSTRUCTION')
+
+    img_dir_win = '"' + img_dir + '"'
+    # fun_txt = 'cd ' + img_dir_win + ' \n' + r'mm3d Tapioca MulScale ".*JPG" 500 2500'
+    fun_txt = 'cd ' + img_dir_win + ' \n' + r'mm3d Tapas RadialStd ".*JPG" Out=Fontaine'
+    win_function(img_dir, function_name, fun_txt)
 
 def launch_realitycapture_reconstruction(rc_path, img_dir, results_dir):
     function_name = 'run_rc'
