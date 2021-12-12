@@ -45,10 +45,11 @@ def launch_micmac_reconstruction(img_dir, results_dir):
     fun_txt = 'cd ' + img_dir_win + ' \n' + r'mm3d Tapas RadialStd ".*JPG" Out=Fontaine'
     win_function(img_dir, function_name, fun_txt)
 
-def launch_realitycapture_reconstruction(rc_path, img_dir, results_dir):
+def launch_realitycapture_reconstruction(rc_path, license_path, img_dir, results_dir):
     function_name = 'run_rc'
     print('RUNNING REALITY CAPTURE RECONSTRUCTION')
 
+    license_path_win = '"' + license_path + '"'
     img_dir_win = '"' + img_dir + '"'
     results_dir_win = '"' + results_dir + '"'
 
