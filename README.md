@@ -1,5 +1,5 @@
 ![Image](https://i.ibb.co/8czRnpv/astronaut-small.png)
-# Launch_station
+# LaunchStation
 >... *A gateway to various photogrammetry tools* ...
 
 ## What is the goal here?
