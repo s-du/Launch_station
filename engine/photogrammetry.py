@@ -40,7 +40,7 @@ def win_function(project_folder, function_name, fun_txt):
 
 
 # Available actions
-TOOL_LIST = ['Meshroom', 'ODM', 'MicMac', 'Metashape', 'RealityCapture']
+TOOL_LIST = ['Meshroom', 'ODM', 'MicMac', 'RealityCapture','Metashape']
 OUTPUT_LIST = ['Point cloud', 'Textured mesh', 'Orthoview', 'All data']
 
 

@@ -77,6 +77,12 @@ class LaunchStation(QtWidgets.QMainWindow):
         self.batch = False # no batch operations by default
         self.batch_operations = []
 
+        # add icon
+        astro = res.find('imgs/astronaut_small.png')
+        self.pushButton_go.setIcon(QtGui.QIcon(astro))
+        self.pushButton_go.setStyleSheet("background-color: #B9B9B9")
+
+
         # add custom listview
         self.listview = TestListView(self)
         self.listview.dropped.connect(self.pictureDropped)
@@ -107,7 +113,7 @@ class LaunchStation(QtWidgets.QMainWindow):
         self.gui_folder = os.path.dirname(__file__)
         self.ref_path = res.find('other/target.txt')
 
-        # initialize status
+
 
         # create connections (signals)
         self.create_connections()
@@ -199,6 +205,13 @@ class LaunchStation(QtWidgets.QMainWindow):
 
     def load_img(self):
         folder = str(QtWidgets.QFileDialog.getExistingDirectory(self, "Select Directory"))
+
+        # enable some widgets
+        self.pushButton_go.setEnabled(True)
+        self.pushButton_add_batch.setEnabled(True)
+        self.comboBox_output.setEnabled(True)
+        self.comboBox_soft.setEnabled(True)
+        self.pushButton_go.setStyleSheet("background-color: #02DAFF")
 
     def go(self):
         # get user choices
