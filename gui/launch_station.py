@@ -7,6 +7,7 @@ from shutil import copyfile, copytree
 from pathlib import Path
 import sys
 import subprocess
+import pkg_resources
 
 # import Pyqt packages
 import PyQt5.uic
@@ -15,7 +16,6 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 # custom modules
 from engine import photogrammetry as ph
 import resources as res
-
 
 
 class TestListView(QtWidgets.QListWidget):
@@ -50,6 +50,7 @@ class TestListView(QtWidgets.QListWidget):
         else:
             event.ignore()
 
+
 class LaunchStation(QtWidgets.QMainWindow):
     """
     Main Window class for the Pointify application.
@@ -81,6 +82,16 @@ class LaunchStation(QtWidgets.QMainWindow):
         self.listview.dropped.connect(self.pictureDropped)
         self.verticalLayout.addWidget(self.listview)
 
+        # prepare treeview
+        # create model (for the tree structure)
+        self.model = QtGui.QStandardItemModel()
+        self.treeView_batch.setModel(self.model)
+        # add right click contextual menu on the tree view
+        self.treeView_batch.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+        self.treeView_batch.customContextMenuRequested.connect(self.openMenu)
+
+        self.selmod = self.treeView_batch.selectionModel()
+
         # add photogrammetry tools in combobox
         self.tool_list = ph.TOOL_LIST
         self.comboBox_soft.addItems(self.tool_list)
@@ -100,6 +111,13 @@ class LaunchStation(QtWidgets.QMainWindow):
 
         # create connections (signals)
         self.create_connections()
+
+    def openMenu(self):
+        pass
+
+    def add_item_in_tree(self, parent, line):
+        item = QtGui.QStandardItem(line)
+        parent.appendRow(item)
 
     def licenses_checks(self):
         # load setup file with the different paths to the photogrammetry applications + license files
@@ -147,7 +165,6 @@ class LaunchStation(QtWidgets.QMainWindow):
             else:
                 print('MicMac bin folder found in environment variables!')
 
-
     def update_photog_tools(self):
         # ['Meshroom .exe path', 'ODM folder', 'MicMac bin folder path', 'Reality Capture .exe path',
         #                'Agisoft license path', 'cloudCompare .exe path']
@@ -174,13 +191,11 @@ class LaunchStation(QtWidgets.QMainWindow):
                     returnValue = msg.exec()
                     pass
 
-
     def create_connections(self):
         # 'Simplify buttons'
         self.pushButton_load.clicked.connect(self.load_img)
         self.pushButton_go.clicked.connect(self.go)
         self.pushButton_add_batch.clicked.connect(self.add_batch)
-
 
     def load_img(self):
         folder = str(QtWidgets.QFileDialog.getExistingDirectory(self, "Select Directory"))
@@ -189,16 +204,30 @@ class LaunchStation(QtWidgets.QMainWindow):
         # get user choices
         i = self.comboBox_soft.currentIndex()  # get the user choice for the software
         j = self.comboBox_output.currentIndex()  # get the user choice for the outputs
-        soft_name = ph.TOOL_LIST[i]
-        print(soft_name, ' will be used for the processing...')
 
         # get list of images to process
-        img_list = [str(self.listview.item(i).text()) for i in range(self.listview.count())]
-        print('... and the following images will be processed: \n', img_list)
+        self.img_list = [str(self.listview.item(i).text()) for i in range(self.listview.count())]
+        print('... the following images will be processed: \n', self.img_list)
 
         # get user choice for the output folder
-        out_dir = str(QtWidgets.QFileDialog.getExistingDirectory(self, "Select output_folder"))
-        out_subdir = os.path.join(out_dir, soft_name)
+        self.out_dir = str(QtWidgets.QFileDialog.getExistingDirectory(self, "Select output_folder"))
+
+        if not self.batch:
+            self.lauch_op(i,j)
+        else:
+            for i,op in enumerate(self.batch_operations):
+                i = op[0]
+                j = op[1]
+                self.lauch_op(i, j, batch=i+1)
+
+    def launch_op(self, soft, outputs, batch=0):
+        soft_name = ph.TOOL_LIST[soft]
+        if batch !=0:
+            soft_name = 'OP' + str(batch) + '_' + 'soft_name'
+        print(soft_name, ' will be used for this processing...')
+
+        # create subfolders to store results
+        out_subdir = os.path.join(self.out_dir, soft_name)
         if not os.path.exists(out_subdir):
             os.mkdir(out_subdir)
 
@@ -210,39 +239,41 @@ class LaunchStation(QtWidgets.QMainWindow):
         if not os.path.exists(results_dir):
             os.mkdir(results_dir)
 
-        for img in img_list:
+        for img in self.img_list:
             _, img_file = os.path.split(img)
             dest_file = os.path.join(img_dir, img_file)
             if not os.path.exists(dest_file):
-                copyfile(img,dest_file)
+                copyfile(img, dest_file)
 
         # convert path to windows format
         # TODO: avoid mixing os.path and pathlib methods
-        out_dir_windows = Path(out_dir)
+        out_dir_windows = Path(self.out_dir)
         img_dir_windows = Path(img_dir)
         results_dir_windows = Path(results_dir)
-        if not self.batch:
-            # get software options
-            if i == 0: # Meshroom
-                options = [self.paths[0], results_dir_windows]
-            if i == 1: # ODM
-                options = [self.paths[1], out_dir_windows]
-            if i == 2: # MicMac
-                pass
-            if i == 3: # Agisoft
-                if not 'Metashape' in sys.modules:
-                    print(r"Ok let's intall Agisoft!")
-                    self.install_agisoft_module()
 
-                options = [results_dir_windows, '']
-            if i == 4: # RealityCapture
-                pass
-
-            # launch reconstruction
-
-            ph.launch_3D_reconstruction(i, j, img_dir_windows, options) # i = software name, j = required outputs, options are software dependant
-        else:
+        # get software options
+        if soft == 0:  # Meshroom
+            options = [self.paths[0], results_dir_windows]
+        if soft == 1:  # ODM
+            options = [self.paths[1], out_dir_windows]
+        if soft == 2:  # MicMac
             pass
+        if soft == 3:  # Agisoft
+            required = {'metashape'}
+            installed = {pkg.key for pkg in pkg_resources.working_set}
+            print(installed)
+            missing = required - installed
+            if missing:
+                print(r"Ok let's intall Agisoft!")
+                self.install_agisoft_module()
+
+            options = [results_dir_windows, '']
+        if soft == 4:  # RealityCapture
+            options = [self.paths[3], results_dir_windows]
+
+        # launch reconstruction
+        ph.launch_3D_reconstruction(soft, outputs, img_dir_windows,
+                                    options)  # i = software name, j = required outputs, options are software dependant
 
     def install_agisoft_module(self):
         # install Metashape module if necessary
@@ -256,10 +287,21 @@ class LaunchStation(QtWidgets.QMainWindow):
         i = self.comboBox_soft.currentIndex()  # get the user choice for the software
         j = self.comboBox_output.currentIndex()  # get the user choice for the outputs
 
-        self.batch_operations.append([i,j])
+        for op in self.batch_operations:
+            if not op == [i,j]:
+                self.batch_operations.append([i,j])
+            else:
+                msg = QtWidgets.QMessageBox()
+                msg.setWindowTitle("Oops")
+                msg.setIcon(QtWidgets.QMessageBox.Warning)
+                msg.setText('Operation already foreseen!')
 
-        # add item to list view
-
+        # add item to tree view
+        batch_op_soft = self.tool_list[i]
+        batch_op_out = self.output_list[j]
+        batch_op = batch_op_soft + ', ' + batch_op_out
+        self.add_item_in_tree(self.model, batch_op)
+        self.model.setHeaderData(0, QtCore.Qt.Horizontal, 'Batch operations')
 
         # update status of operations
         self.batch = True

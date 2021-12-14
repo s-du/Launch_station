@@ -66,6 +66,8 @@ def launch_3D_reconstruction(software, outputs_selection, img_dir, options):
         pass
     elif software == 3:
         launch_agisoft_reconstruction(outputs_selection, img_dir, options[0], markers_path = options[1])
+    elif software == 4:
+        launch_realitycapture_reconstruction(outputs_selection, img_dir, options[0], options[1])
 
 
 def launch_meshroom_reconstruction(outputs_selection, img_dir, meshroom_path, results_dir):
@@ -105,7 +107,7 @@ def launch_odm_reconstruction(outputs_selection, img_dir, odm_path, project_dir)
     p = Popen(odm_c_b_path_copy, cwd=odm_path)
     stdout, stderr = p.communicate()
 
-    # os.remove(odm_c_b_path_copy)
+    os.remove(odm_c_b_path_copy)
 
 
 def launch_micmac_reconstruction(outputs_selection, img_dir, results_dir):
@@ -153,7 +155,7 @@ def launch_agisoft_reconstruction(outputs_selection, img_dir, results_dir, marke
     chk.matchPhotos(guided_matching=True, generic_preselection=False, reference_preselection=False)
     chk.alignCameras()
     chk.buildDepthMaps()
-    chk.buildModel(source_data=Metashape.DataSource.DepthMapsData, face_count=Metashape.MediumFaceCount)
+    chk.buildModel(source_data=Metashape.DataSource.DepthMapsData, face_count=Metashape.HighFaceCount)
     chk.buildUV(mapping_mode=Metashape.GenericMapping)
     chk.buildTexture(texture_size=4096)  # optional argument to change texture size
 
@@ -177,15 +179,17 @@ def launch_agisoft_reconstruction(outputs_selection, img_dir, results_dir, marke
     # avoiding bad allocation error
 
 
-def launch_realitycapture_reconstruction(rc_path, license_path, img_dir, results_dir):
+def launch_realitycapture_reconstruction(outputs_selection, img_dir, rc_path, results_dir):
     function_name = 'run_rc'
     print('RUNNING REALITY CAPTURE RECONSTRUCTION')
+    model_name = '"Model 1"'
+    model_rgb_file = results_dir.joinpath('texturedMesh.obj')
 
-    # license_path_win = '"' + license_path + '"'
-    img_dir_win = '"' + img_dir + '"'
-    results_dir_win = '"' + results_dir + '"'
+    fun_txt = 'SET MY_PATH="' + rc_path + '" \n' + '%MY_PATH% -headless -addFolder ' + str(img_dir) + ' -align ' \
+           '-calculateHighModel ' \
+           '-calculateTexture ' \
+           '-exportModel ' + model_name + ' ' + str(model_rgb_file) + ' -quit'
 
-    fun_txt = 'SET MY_PATH="' + rc_path + '" \n' + '%MY_PATH% -addFolder ' + img_dir_win + ' -align '
     win_function(img_dir, function_name, fun_txt)
 
 

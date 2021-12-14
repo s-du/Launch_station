@@ -112,7 +112,7 @@
       </property>
       <layout class="QVBoxLayout" name="verticalLayout_5">
        <item>
-        <widget class="QListView" name="listView">
+        <widget class="QTreeView" name="treeView_batch">
          <property name="minimumSize">
           <size>
            <width>250</width>
