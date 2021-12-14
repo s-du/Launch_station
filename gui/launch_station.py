@@ -5,6 +5,8 @@
 import os.path
 from shutil import copyfile, copytree
 from pathlib import Path
+import sys
+import subprocess
 
 # import Pyqt packages
 import PyQt5.uic
@@ -12,7 +14,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 
 # custom modules
 from engine import photogrammetry as ph
-import resources
+import resources as res
 
 
 
@@ -92,7 +94,7 @@ class LaunchStation(QtWidgets.QMainWindow):
 
         # define useful paths
         self.gui_folder = os.path.dirname(__file__)
-        self.ref_path = resources.find('other/target.txt')
+        self.ref_path = res.find('other/target.txt')
 
         # initialize status
 
@@ -134,7 +136,8 @@ class LaunchStation(QtWidgets.QMainWindow):
             # print Metashape license location
             print('license location is: ', self.paths[4])
             # add license to environment variables
-            os.putenv('agisoft_LICENSE', self.paths[4])
+            os.environ['agisoft_LICENSE'] = str(Path(self.paths[4]))
+            print('Here it is!!', os.environ['agisoft_LICENSE'])
 
         # Micmac operations (add environment path if necessary)
         if not self.wrong_paths[1]:
@@ -213,24 +216,41 @@ class LaunchStation(QtWidgets.QMainWindow):
             if not os.path.exists(dest_file):
                 copyfile(img,dest_file)
 
+        # convert path to windows format
+        # TODO: avoid mixing os.path and pathlib methods
+        out_dir_windows = Path(out_dir)
+        img_dir_windows = Path(img_dir)
+        results_dir_windows = Path(results_dir)
         if not self.batch:
             # get software options
             if i == 0: # Meshroom
-                options = [self.paths[0], results_dir]
+                options = [self.paths[0], results_dir_windows]
             if i == 1: # ODM
-                out_dir_odm = Path(out_dir)
-                options = [self.paths[1], out_dir_odm]
+                options = [self.paths[1], out_dir_windows]
             if i == 2: # MicMac
                 pass
             if i == 3: # Agisoft
-                pass
+                if not 'Metashape' in sys.modules:
+                    print(r"Ok let's intall Agisoft!")
+                    self.install_agisoft_module()
+
+                options = [results_dir_windows, '']
             if i == 4: # RealityCapture
                 pass
 
             # launch reconstruction
-            ph.launch_3D_reconstruction(i, j, img_dir, options) # i = software name, j = required outputs, options are software dependant
+
+            ph.launch_3D_reconstruction(i, j, img_dir_windows, options) # i = software name, j = required outputs, options are software dependant
         else:
             pass
+
+    def install_agisoft_module(self):
+        # install Metashape module if necessary
+        def install(package):
+            subprocess.check_call([sys.executable, "-m", "pip", "install", package])
+
+        metashape_module = res.find('other/Metashape-1.7.3-cp35.cp36.cp37.cp38-none-win_amd64.whl')
+        install(metashape_module)
 
     def add_batch(self):
         i = self.comboBox_soft.currentIndex()  # get the user choice for the software

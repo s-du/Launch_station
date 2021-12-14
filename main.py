@@ -11,25 +11,6 @@ from PyQt5 import QtWidgets
 #from qt_material import apply_stylesheet
 
 import os
-import subprocess
-import resources as res
-import sys
-
-# reading agisoft license
-file1 = open('setup.txt', 'r')
-Lines = file1.readlines()
-agisoft_license_path = Lines[3]
-# remove special character
-agisoft_license_path = agisoft_license_path.strip()
-
-
-# install Metashape module if necessary
-metashape_module = res.find('other/Metashape-1.7.3-cp35.cp36.cp37.cp38-none-win_amd64.whl')
-def install(package):
-    subprocess.check_call([sys.executable, "-m", "pip", "install", package])
-
-if not 'Metashape' in sys.modules:
-    install(metashape_module)
 
 
 def main(argv=None):

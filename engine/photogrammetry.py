@@ -7,7 +7,6 @@ import time
 import math
 import numpy as np
 from cv2 import imread, imwrite, boundingRect, findNonZero
-import Metashape
 import fileinput
 
 from skimage.color import rgb2gray
@@ -25,6 +24,7 @@ General functions
 
 def win_function(project_folder, function_name, fun_txt):
     """
+    TODO: rewrite more cleanly
     Function to create a bat file
     :param project_folder:
     :param function_name:
@@ -50,7 +50,7 @@ Reconstruction functions
 ======================================================================================
 """
 
-def launch_3D_reconstruction(software, output, img_dir, options):
+def launch_3D_reconstruction(software, outputs_selection, img_dir, options):
     """
     Function to dispatch the reconstruction to a specific software, with specific outputs
     :param i:
@@ -59,25 +59,27 @@ def launch_3D_reconstruction(software, output, img_dir, options):
     :return:
     """
     if software == 0:
-        launch_meshroom_reconstruction(output, img_dir, options[0], options[1])
+        launch_meshroom_reconstruction(outputs_selection, img_dir, options[0], options[1])
     elif software == 1:
-        launch_odm_reconstruction(output, img_dir, options[0], options[1])
+        launch_odm_reconstruction(outputs_selection, img_dir, options[0], options[1])
+    elif software == 2:
+        pass
+    elif software == 3:
+        launch_agisoft_reconstruction(outputs_selection, img_dir, options[0], markers_path = options[1])
 
 
-def launch_meshroom_reconstruction(output, img_dir, meshroom_path, results_dir):
+def launch_meshroom_reconstruction(outputs_selection, img_dir, meshroom_path, results_dir):
     function_name = 'run_meshroom'
     print('RUNNING MESHROOM RECONSTRUCTION')
 
     ref_process = resources.find(r'other\ref_process_v5_tag.mg')
-    img_dir_win = '"' + img_dir + '"'
-    results_dir_win = '"' + results_dir + '"'
 
-    fun_txt = 'SET MY_PATH="' + meshroom_path + '" \n' + '%MY_PATH% --input ' + img_dir_win + ' --output ' \
-              + results_dir_win + ' --pipeline ' + ref_process + ' --forceCompute'
+    fun_txt = 'SET MY_PATH="' + meshroom_path + '" \n' + '%MY_PATH% --input ' + str(img_dir) + ' --output ' \
+              + str(results_dir) + ' --pipeline ' + ref_process + ' --forceCompute'
     win_function(img_dir, function_name, fun_txt)
 
 
-def launch_odm_reconstruction(output, img_dir, odm_path, project_dir):
+def launch_odm_reconstruction(outputs_selection, img_dir, odm_path, project_dir):
     function_name = 'run_odm'
     print('RUNNING ODM RECONSTRUCTION')
 
@@ -106,8 +108,7 @@ def launch_odm_reconstruction(output, img_dir, odm_path, project_dir):
     # os.remove(odm_c_b_path_copy)
 
 
-
-def launch_micmac_reconstruction(img_dir, results_dir):
+def launch_micmac_reconstruction(outputs_selection, img_dir, results_dir):
     """
     Here a more sequential approach is chosen
     :param img_dir:
@@ -124,6 +125,58 @@ def launch_micmac_reconstruction(img_dir, results_dir):
     fun_txt = 'cd ' + img_dir_win + ' \n' + r'mm3d Tapas RadialStd ".*JPG" Out=project'
     win_function(img_dir, function_name, fun_txt)
 
+
+def launch_agisoft_reconstruction(outputs_selection, img_dir, results_dir, markers_path=''):
+    import Metashape
+    print('RUNNING AGISOFT RECONSTRUCTION')
+    # file names
+    model_rgb_file = results_dir.joinpath('texturedMesh.obj')
+    if outputs_selection == 2:
+        ortho_rgb_file = results_dir.joinpath('ortho_rgb.tif')
+
+    # new project
+    doc = Metashape.Document()
+    doc.save(path=str(results_dir) + "/" + 'agisoft.psx')
+
+    # creating new chunk for RGB
+    chk = doc.addChunk()
+    chk.label = 'RGB'
+
+    # loading RGB images
+    image_list = os.listdir(str(img_dir))
+    photo_list = []
+    for photo in image_list:
+        photo_list.append("/".join([str(img_dir), photo]))
+    chk.addPhotos(photo_list)
+
+    # proces RGB images
+    chk.matchPhotos(guided_matching=True, generic_preselection=False, reference_preselection=False)
+    chk.alignCameras()
+    chk.buildDepthMaps()
+    chk.buildModel(source_data=Metashape.DataSource.DepthMapsData, face_count=Metashape.MediumFaceCount)
+    chk.buildUV(mapping_mode=Metashape.GenericMapping)
+    chk.buildTexture(texture_size=4096)  # optional argument to change texture size
+
+    # use markers if necessary
+    if markers_path:
+        chk.detectMarkers()
+        chk.importReference(path=str(markers_path), format=Metashape.ReferenceFormatCSV, delimiter=';', columns='nxyz')
+        chk.updateTransform()
+
+    Metashape.app.update()
+
+    # export rgb model (mesh)
+    chk.exportModel(path=str(model_rgb_file), save_normals=False, texture_format=Metashape.ImageFormatPNG, save_texture=True, save_uv=True, save_markers=False)
+
+    doc.save()
+    # make ortho if needed
+    if outputs_selection == 2:
+        chk.buildOrthomosaic(surface_data=Metashape.ModelData)
+        chk.exportRaster(ortho_rgb_file)
+
+    # avoiding bad allocation error
+
+
 def launch_realitycapture_reconstruction(rc_path, license_path, img_dir, results_dir):
     function_name = 'run_rc'
     print('RUNNING REALITY CAPTURE RECONSTRUCTION')
@@ -137,101 +190,6 @@ def launch_realitycapture_reconstruction(rc_path, license_path, img_dir, results
 
 
 
-
-def launch_agisoft_reconstruction_with_markers(ref_path, img_dir, results_dir,opt_make_ortho = True):
-    """
-    Agisoft offers the more flexible solution with a true Python module
-    :param ref_path:
-    :param img_dir:
-    :param results_dir:
-    :param opt_make_ortho:
-    :return:
-    """
-    print('RUNNING AGISOFT RECONSTRUCTION')
-    # file names
-    model_rgb_file = os.path.join(results_dir, 'texturedMesh.obj')
-    if opt_make_ortho:
-        ortho_rgb_file = os.path.join(results_dir, 'ortho_rgb.tif')
-
-    # new project
-    doc = Metashape.Document()
-    doc.save(path=results_dir + "/" + 'agisoft.psx')
-
-    # creating new chunk for RGB
-    chk = doc.addChunk()
-    chk.label = 'RGB'
-
-    # loading RGB images
-    image_list = os.listdir(img_dir)
-    photo_list = []
-    for photo in image_list:
-        photo_list.append("/".join([img_dir, photo]))
-    chk.addPhotos(photo_list)
-
-    # proces RGB images
-
-    chk.matchPhotos(guided_matching=True, generic_preselection=False, reference_preselection=False)
-    chk.alignCameras()
-    chk.buildDepthMaps()
-    chk.buildModel(source_data=Metashape.DataSource.DepthMapsData, face_count=Metashape.MediumFaceCount)
-    chk.buildUV(mapping_mode=Metashape.GenericMapping)
-    chk.buildTexture(texture_size=4096)  # optional argument to change texture size
-    chk.detectMarkers()
-    chk.importReference(path=ref_path, format=Metashape.ReferenceFormatCSV, delimiter=';', columns='nxyz')
-    chk.updateTransform()
-    Metashape.app.update()
-
-    # export rgb model (mesh)
-    chk.exportModel(path=model_rgb_file, save_normals=False, texture_format=Metashape.ImageFormatPNG, save_texture=True,
-                    save_uv=True, save_markers=False)
-
-    doc.save()
-    # make ortho if needed
-    if opt_make_ortho:
-        chk.buildOrthomosaic(surface_data=Metashape.ModelData)
-        chk.exportRaster(ortho_rgb_file)
-
-def launch_agisoft_reconstruction(img_dir, results_dir, opt_make_ortho = False):
-    print('RUNNING AGISOFT RECONSTRUCTION')
-    # file names
-    model_rgb_file = os.path.join(results_dir, 'texturedMesh.obj')
-    if opt_make_ortho:
-        ortho_rgb_file = os.path.join(results_dir, 'ortho_rgb.tif')
-
-    # new project
-    doc = Metashape.Document()
-    doc.save(path=results_dir + "/" + 'agisoft.psx')
-
-    # creating new chunk for RGB
-    chk = doc.addChunk()
-    chk.label = 'RGB'
-
-    # loading RGB images
-    image_list = os.listdir(img_dir)
-    photo_list = []
-    for photo in image_list:
-        photo_list.append("/".join([img_dir, photo]))
-    chk.addPhotos(photo_list)
-
-    # proces RGB images
-    chk.matchPhotos(guided_matching=True, generic_preselection=False, reference_preselection=False)
-    chk.alignCameras()
-    chk.buildDepthMaps()
-    chk.buildModel(source_data=Metashape.DataSource.DepthMapsData, face_count=Metashape.MediumFaceCount)
-    chk.buildUV(mapping_mode=Metashape.GenericMapping)
-    chk.buildTexture(texture_size=4096)  # optional argument to change texture size
-    Metashape.app.update()
-
-    # export rgb model (mesh)
-    chk.exportModel(path=model_rgb_file, save_normals=False, texture_format=Metashape.ImageFormatPNG, save_texture=True, save_uv=True, save_markers=False)
-
-    doc.save()
-    # make ortho if needed
-    if opt_make_ortho:
-        chk.buildOrthomosaic(surface_data=Metashape.ModelData)
-        chk.exportRaster(ortho_rgb_file)
-
-    # avoiding bad allocation error
 
 
 """
