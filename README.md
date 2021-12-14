@@ -10,7 +10,17 @@ The tool uses Python to call various CLI for the main photogrammetry tools. It i
 * MicMac (see [Link](https://micmac.ensg.eu/index.php/Accueil))
 * Agisoft Metashape
 * Reality Capture
+
 The CLI transcription system can be found in the /engine folder.
 
+### GUI
+A simple GUI is being developed (PyQT5). 
+
+## Installation
+(TBC)
+
+## Use
+The app is made to propose a simplified experience. First the user drops some photos in the dedicated zone (or choose an image folder). Then he defines the output of the 3D reconstruction (point cloud, mesh, etc.). 
+
 ### Batch system
-By proposing a batch system, the user can launch several reconstructions in a row. The output of the 3D reconstruction can also be defined (point cloud, mesh, etc.)
+By proposing a batch system, the user can launch several reconstructions in a row. 
