@@ -1,12 +1,14 @@
 import resources
 import os
 import subprocess
+from subprocess import Popen
 from open3d import io, visualization
 import time
 import math
 import numpy as np
 from cv2 import imread, imwrite, boundingRect, findNonZero
 import Metashape
+import fileinput
 
 from skimage.color import rgb2gray
 from skimage.transform import rotate
@@ -22,6 +24,13 @@ General functions
 """
 
 def win_function(project_folder, function_name, fun_txt):
+    """
+    Function to create a bat file
+    :param project_folder:
+    :param function_name:
+    :param fun_txt:
+    :return:
+    """
     batpath = os.path.join(project_folder, function_name + ".bat")
     with open(batpath, 'w') as OPATH:
         OPATH.writelines(fun_txt)
@@ -29,42 +38,33 @@ def win_function(project_folder, function_name, fun_txt):
     os.remove(batpath)
 
 
+
+# Available actions
+TOOL_LIST = ['Meshroom', 'ODM', 'MicMac', 'Metashape', 'RealityCapture']
+OUTPUT_LIST = ['Point cloud', 'Textured mesh', 'Orthoview', 'All data']
+
+
 """
 ======================================================================================
 Reconstruction functions
 ======================================================================================
 """
-def launch_odm_reconstruction(img_dir, results_dir):
-    function_name = 'run_odm'
-    print('RUNNING ODM RECONSTRUCTION')
 
-    img_dir_win = '"' + img_dir + '"'
-    # fun_txt = 'cd ' + img_dir_win + ' \n' + r'mm3d Tapioca MulScale ".*JPG" 500 2500'
-    fun_txt = 'cd ' + img_dir_win + ' \n' + r'mm3d Tapas RadialStd ".*JPG" Out=Fontaine'
-    win_function(img_dir, function_name, fun_txt)
-
-def launch_micmac_reconstruction(img_dir, results_dir):
-    function_name = 'run_mm'
-    print('RUNNING MICMAC RECONSTRUCTION')
-
-    img_dir_win = '"' + img_dir + '"'
-    # fun_txt = 'cd ' + img_dir_win + ' \n' + r'mm3d Tapioca MulScale ".*JPG" 500 2500'
-    fun_txt = 'cd ' + img_dir_win + ' \n' + r'mm3d Tapas RadialStd ".*JPG" Out=Fontaine'
-    win_function(img_dir, function_name, fun_txt)
-
-def launch_realitycapture_reconstruction(rc_path, license_path, img_dir, results_dir):
-    function_name = 'run_rc'
-    print('RUNNING REALITY CAPTURE RECONSTRUCTION')
-
-    license_path_win = '"' + license_path + '"'
-    img_dir_win = '"' + img_dir + '"'
-    results_dir_win = '"' + results_dir + '"'
-
-    fun_txt = 'SET MY_PATH="' + rc_path + '" \n' + '%MY_PATH% -addFolder ' + img_dir_win + ' -align '
-    win_function(img_dir, function_name, fun_txt)
+def launch_3D_reconstruction(software, output, img_dir, options):
+    """
+    Function to dispatch the reconstruction to a specific software, with specific outputs
+    :param i:
+    :param j:
+    :param img_dir:
+    :return:
+    """
+    if software == 0:
+        launch_meshroom_reconstruction(output, img_dir, options[0], options[1])
+    elif software == 1:
+        launch_odm_reconstruction(output, img_dir, options[0], options[1])
 
 
-def launch_meshroom_reconstruction(meshroom_path, img_dir, results_dir):
+def launch_meshroom_reconstruction(output, img_dir, meshroom_path, results_dir):
     function_name = 'run_meshroom'
     print('RUNNING MESHROOM RECONSTRUCTION')
 
@@ -72,12 +72,81 @@ def launch_meshroom_reconstruction(meshroom_path, img_dir, results_dir):
     img_dir_win = '"' + img_dir + '"'
     results_dir_win = '"' + results_dir + '"'
 
-    # CloudCompare fonction
     fun_txt = 'SET MY_PATH="' + meshroom_path + '" \n' + '%MY_PATH% --input ' + img_dir_win + ' --output ' \
               + results_dir_win + ' --pipeline ' + ref_process + ' --forceCompute'
     win_function(img_dir, function_name, fun_txt)
 
+
+def launch_odm_reconstruction(output, img_dir, odm_path, project_dir):
+    function_name = 'run_odm'
+    print('RUNNING ODM RECONSTRUCTION')
+
+    project_name = TOOL_LIST[1]
+
+    odm_console_bat_path = os.path.join(odm_path, 'console.bat')
+    odm_c_b_path_copy = os.path.join(odm_path, 'console_temp.bat')
+    txt_to_search = 'run --help'
+    txt_to_replace = 'run --project-path ' + str(project_dir) + ' ' + project_name
+
+    # Read in the file
+    with open(odm_console_bat_path, 'r') as file:
+        filedata = file.read()
+
+    # Replace the target string
+    filedata = filedata.replace(txt_to_search, txt_to_replace)
+
+    # Write the file out again
+    with open(odm_c_b_path_copy, 'w') as file:
+        file.write(filedata)
+
+    # Execute BAT file
+    p = Popen(odm_c_b_path_copy, cwd=odm_path)
+    stdout, stderr = p.communicate()
+
+    # os.remove(odm_c_b_path_copy)
+
+
+
+def launch_micmac_reconstruction(img_dir, results_dir):
+    """
+    Here a more sequential approach is chosen
+    :param img_dir:
+    :param results_dir:
+    :return:
+    """
+    function_name = 'run_mm'
+    print('RUNNING MICMAC RECONSTRUCTION')
+
+    img_dir_win = '"' + img_dir + '"'
+    fun_txt = 'cd ' + img_dir_win + ' \n' + r'mm3d Tapioca MulScale ".*JPG" 500 2500'
+    win_function(img_dir, function_name, fun_txt)
+
+    fun_txt = 'cd ' + img_dir_win + ' \n' + r'mm3d Tapas RadialStd ".*JPG" Out=project'
+    win_function(img_dir, function_name, fun_txt)
+
+def launch_realitycapture_reconstruction(rc_path, license_path, img_dir, results_dir):
+    function_name = 'run_rc'
+    print('RUNNING REALITY CAPTURE RECONSTRUCTION')
+
+    # license_path_win = '"' + license_path + '"'
+    img_dir_win = '"' + img_dir + '"'
+    results_dir_win = '"' + results_dir + '"'
+
+    fun_txt = 'SET MY_PATH="' + rc_path + '" \n' + '%MY_PATH% -addFolder ' + img_dir_win + ' -align '
+    win_function(img_dir, function_name, fun_txt)
+
+
+
+
 def launch_agisoft_reconstruction_with_markers(ref_path, img_dir, results_dir,opt_make_ortho = True):
+    """
+    Agisoft offers the more flexible solution with a true Python module
+    :param ref_path:
+    :param img_dir:
+    :param results_dir:
+    :param opt_make_ortho:
+    :return:
+    """
     print('RUNNING AGISOFT RECONSTRUCTION')
     # file names
     model_rgb_file = os.path.join(results_dir, 'texturedMesh.obj')

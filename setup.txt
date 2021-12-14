@@ -1,20 +1,20 @@
-meshroom path:
+Meshroom path:
 D:\Software\Meshroom-2021.1.0\meshroom_batch.exe
+
+ODM path:
+C:\ODM
 
 MicMac path:
 D:\Software\MicMac\bin
 
-reality capture path:
+Reality capture path:
 C:\Program Files\Capturing Reality\RealityCapture\RealityCapture.exe
 
-reality capture license path:
--
-
-agisoft license path:
+Agisoft license path:
 C:\Program Files\Agisoft\Metashape Pro\metashape2.lic
 
 Cloudcompare path:
 C:\Program Files\CloudCompare\CloudCompare.exe
 
 ________________________________________________________
-Note: surf to https://www.capturingreality.com/my.licenses#Activations to create a license file for Reality Capture
+Note: Reality Capture must be activated before using Lauch_Station

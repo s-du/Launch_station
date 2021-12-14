@@ -8,7 +8,7 @@ __copyright__ = 'Copyright (c) CSTC/WTCB/BBRI 2021'
 __license__ = ''
 
 from PyQt5 import QtWidgets
-from qt_material import apply_stylesheet
+#from qt_material import apply_stylesheet
 
 import os
 import subprocess
@@ -50,7 +50,7 @@ def main(argv=None):
     # create the application if necessary
     if (not QtWidgets.QApplication.instance()):
         app = QtWidgets.QApplication(argv)
-        apply_stylesheet(app, theme = 'light_blue.xml')
+        # apply_stylesheet(app, theme = 'light_blue.xml')
 
     # create the main window
     from gui.launch_station import LaunchStation

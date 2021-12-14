@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>582</width>
+    <width>579</width>
     <height>648</height>
    </rect>
   </property>
@@ -112,7 +112,14 @@
       </property>
       <layout class="QVBoxLayout" name="verticalLayout_5">
        <item>
-        <widget class="QListView" name="listView"/>
+        <widget class="QListView" name="listView">
+         <property name="minimumSize">
+          <size>
+           <width>250</width>
+           <height>0</height>
+          </size>
+         </property>
+        </widget>
        </item>
       </layout>
      </widget>
@@ -124,8 +131,8 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>582</width>
-     <height>21</height>
+     <width>579</width>
+     <height>26</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuAdd_Agisoft_Metashape_License">
@@ -133,6 +140,7 @@
      <string>Applications paths</string>
     </property>
     <addaction name="actionPath_to_Meshroom"/>
+    <addaction name="actionPath_to_ODM"/>
     <addaction name="actionPath_to_Reality_Capture"/>
     <addaction name="actionPath_to_CloudCompare"/>
    </widget>
@@ -140,7 +148,6 @@
     <property name="title">
      <string>License files</string>
     </property>
-    <addaction name="actionSelect_Reality_Capture_license_file"/>
     <addaction name="actionSelect_Agisoft_Metashape_license_file"/>
    </widget>
    <addaction name="menuAdd_Agisoft_Metashape_License"/>
@@ -170,6 +177,11 @@
   <action name="actionSelect_Agisoft_Metashape_license_file">
    <property name="text">
     <string>Select Agisoft Metashape license file</string>
+   </property>
+  </action>
+  <action name="actionPath_to_ODM">
+   <property name="text">
+    <string>Path to ODM</string>
    </property>
   </action>
  </widget>
