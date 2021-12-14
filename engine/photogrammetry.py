@@ -34,7 +34,14 @@ def win_function(project_folder, function_name, fun_txt):
 Reconstruction functions
 ======================================================================================
 """
+def launch_odm_reconstruction(img_dir, results_dir):
+    function_name = 'run_odm'
+    print('RUNNING ODM RECONSTRUCTION')
 
+    img_dir_win = '"' + img_dir + '"'
+    # fun_txt = 'cd ' + img_dir_win + ' \n' + r'mm3d Tapioca MulScale ".*JPG" 500 2500'
+    fun_txt = 'cd ' + img_dir_win + ' \n' + r'mm3d Tapas RadialStd ".*JPG" Out=Fontaine'
+    win_function(img_dir, function_name, fun_txt)
 
 def launch_micmac_reconstruction(img_dir, results_dir):
     function_name = 'run_mm'
