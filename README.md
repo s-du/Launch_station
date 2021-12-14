@@ -1,4 +1,4 @@
-![Image](https://i.ibb.co/jVMcH0q/astronaut.jpg)
+![Image](https://i.ibb.co/8czRnpv/astronaut-small.png)
 # Launch_station
 >... *A gateway to various photogrammetry tools* ...
 
