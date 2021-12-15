@@ -51,6 +51,38 @@ class TestListView(QtWidgets.QListWidget):
             event.ignore()
 
 
+class dialog_agisoft(QtWidgets.QDialog):
+    """
+    Dialog that opens finding specific walls
+    """
+
+    def __init__(self, parent=None):
+        QtWidgets.QDialog.__init__(self)
+        basepath = os.path.dirname(__file__)
+        basename = 'dialog_agisoft'
+        uifile = os.path.join(basepath, 'ui/%s.ui' % basename)
+        PyQt5.uic.loadUi(uifile, self)
+
+        # initialize variables
+
+        # Initialize combobox
+        # Fill comboboxes
+        self.qual_list = ['Medium', 'High']
+        self.comboBox_qual.addItems(self.colormap_list)
+
+        self.res_list = ['2048', '4096', '8192']
+        self.comboBox_res.addItems(self.colormap_list)
+
+        self.pushButton_browse.clicked.connect(self.get_gcp)
+        self.buttonBox.accepted.connect(self.accept)
+        self.buttonBox.rejected.connect(self.reject)
+
+    def get_gcp(self):
+        pass
+
+
+
+
 class LaunchStation(QtWidgets.QMainWindow):
     """
     Main Window class for the Pointify application.
@@ -82,13 +114,12 @@ class LaunchStation(QtWidgets.QMainWindow):
         self.pushButton_go.setIcon(QtGui.QIcon(astro))
         self.pushButton_go.setStyleSheet("background-color: #B9B9B9")
 
-
-        # add custom listview
+        # add custom list view
         self.listview = TestListView(self)
-        self.listview.dropped.connect(self.pictureDropped)
+        self.listview.dropped.connect(self.picture_dropped)
         self.verticalLayout.addWidget(self.listview)
 
-        # prepare treeview
+        # prepare tree view
         # create model (for the tree structure)
         self.model = QtGui.QStandardItemModel()
         self.treeView_batch.setModel(self.model)
@@ -112,8 +143,6 @@ class LaunchStation(QtWidgets.QMainWindow):
         # define useful paths
         self.gui_folder = os.path.dirname(__file__)
         self.ref_path = res.find('other/target.txt')
-
-
 
         # create connections (signals)
         self.create_connections()
@@ -178,17 +207,22 @@ class LaunchStation(QtWidgets.QMainWindow):
             if self.wrong_paths[i]:
                 self.comboBox_soft.model().item(i).setEnabled(False)
 
-    def pictureDropped(self, l):
+    def picture_dropped(self, l):
+
         for url in l:
             if os.path.exists(url):
                 print(url)
                 if url.endswith('.JPG') or url.endswith('.jpg') or url.endswith('png'):
-                    icon = QtGui.QIcon(url)
-                    pixmap = icon.pixmap(72, 72)
-                    icon = QtGui.QIcon(pixmap)
-                    item = QtWidgets.QListWidgetItem(url, self.listview)
-                    item.setIcon(icon)
-                    item.setStatusTip(url)
+                    self.img_list = [str(self.listview.item(i).text()) for i in range(self.listview.count())]
+                    if url not in self.img_list:
+                        icon = QtGui.QIcon(url)
+                        pixmap = icon.pixmap(72, 72)
+                        icon = QtGui.QIcon(pixmap)
+                        item = QtWidgets.QListWidgetItem(url, self.listview)
+                        item.setIcon(icon)
+                        item.setStatusTip(url)
+
+
                 else:
                     msg = QtWidgets.QMessageBox()
                     msg.setIcon(QtWidgets.QMessageBox.Information)
@@ -196,6 +230,16 @@ class LaunchStation(QtWidgets.QMainWindow):
                     msg.setText("Please add jpg or png pictures!")
                     returnValue = msg.exec()
                     pass
+
+
+        if len(self.img_list) > 3:
+            print('... the following images will be processed: \n', self.img_list)
+            # enable some widgets
+            self.pushButton_go.setEnabled(True)
+            self.pushButton_add_batch.setEnabled(True)
+            self.comboBox_output.setEnabled(True)
+            self.comboBox_soft.setEnabled(True)
+            self.pushButton_go.setStyleSheet("background-color: #02DAFF")
 
     def create_connections(self):
         # 'Simplify buttons'
@@ -205,33 +249,29 @@ class LaunchStation(QtWidgets.QMainWindow):
 
     def load_img(self):
         folder = str(QtWidgets.QFileDialog.getExistingDirectory(self, "Select Directory"))
-
-        # enable some widgets
-        self.pushButton_go.setEnabled(True)
-        self.pushButton_add_batch.setEnabled(True)
-        self.comboBox_output.setEnabled(True)
-        self.comboBox_soft.setEnabled(True)
-        self.pushButton_go.setStyleSheet("background-color: #02DAFF")
+        imported_list = []
+        for path in os.listdir(folder):
+            full_path = folder + '/' + path # TODO make that more clean
+            imported_list.append(full_path)
+        print(imported_list)
+        self.picture_dropped(imported_list)
 
     def go(self):
         # get user choices
         i = self.comboBox_soft.currentIndex()  # get the user choice for the software
         j = self.comboBox_output.currentIndex()  # get the user choice for the outputs
 
-        # get list of images to process
-        self.img_list = [str(self.listview.item(i).text()) for i in range(self.listview.count())]
-        print('... the following images will be processed: \n', self.img_list)
-
         # get user choice for the output folder
         self.out_dir = str(QtWidgets.QFileDialog.getExistingDirectory(self, "Select output_folder"))
 
-        if not self.batch:
-            self.lauch_op(i,j)
-        else:
-            for i,op in enumerate(self.batch_operations):
-                i = op[0]
-                j = op[1]
-                self.lauch_op(i, j, batch=i+1)
+        if os.path.isdir(self.out_dir): # nothing happens if the user do not choose a folder
+            if not self.batch:
+                self.launch_op(i,j)
+            else:
+                for i,op in enumerate(self.batch_operations):
+                    i = op[0]
+                    j = op[1]
+                    self.lauch_op(i, j, batch=i+1)
 
     def launch_op(self, soft, outputs, batch=0):
         soft_name = ph.TOOL_LIST[soft]
@@ -266,12 +306,19 @@ class LaunchStation(QtWidgets.QMainWindow):
 
         # get software options
         if soft == 0:  # Meshroom
-            options = [self.paths[0], results_dir_windows]
+            options = [self.paths[0], results_dir_windows, ''] # the '' should be replaced with markers txt file path
+        # ______________________________________________
+
         if soft == 1:  # ODM
             options = [self.paths[1], out_dir_windows]
+        # ______________________________________________
+
         if soft == 2:  # MicMac
             pass
+        # ______________________________________________
+
         if soft == 3:  # Agisoft
+            # check if module is installed
             required = {'metashape'}
             installed = {pkg.key for pkg in pkg_resources.working_set}
             print(installed)
@@ -280,7 +327,23 @@ class LaunchStation(QtWidgets.QMainWindow):
                 print(r"Ok let's intall Agisoft!")
                 self.install_agisoft_module()
 
+            # launch dialog for user options
+            dialog = dialog_agisoft()
+            dialog.setWindowTitle("Choose parameters for Agisoft reconstruction")
+
+            if dialog.exec_():
+                try:
+                    nb_text = int(dialog.lineEdit_nb_text.text())
+                    qual = dialog.comboBox_qual.currentIndex()
+
+                except ValueError:
+                    QtWidgets.QMessageBox.warning(self, "Warning",
+                                                  "Oops! The number of texture is not valid.  Try again...")
+                    self.dialog_agisoft()
+
             options = [results_dir_windows, '']
+        # ______________________________________________
+
         if soft == 4:  # RealityCapture
             options = [self.paths[3], results_dir_windows]
 

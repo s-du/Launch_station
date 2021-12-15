@@ -59,7 +59,7 @@ def launch_3D_reconstruction(software, outputs_selection, img_dir, options):
     :return:
     """
     if software == 0:
-        launch_meshroom_reconstruction(outputs_selection, img_dir, options[0], options[1])
+        launch_meshroom_reconstruction(outputs_selection, img_dir, options[0], options[1], markers_path = options[2])
     elif software == 1:
         launch_odm_reconstruction(outputs_selection, img_dir, options[0], options[1])
     elif software == 2:
@@ -70,7 +70,7 @@ def launch_3D_reconstruction(software, outputs_selection, img_dir, options):
         launch_realitycapture_reconstruction(outputs_selection, img_dir, options[0], options[1])
 
 
-def launch_meshroom_reconstruction(outputs_selection, img_dir, meshroom_path, results_dir):
+def launch_meshroom_reconstruction(outputs_selection, img_dir, meshroom_path, results_dir, markers_path=''):
     function_name = 'run_meshroom'
     print('RUNNING MESHROOM RECONSTRUCTION')
 
@@ -128,13 +128,28 @@ def launch_micmac_reconstruction(outputs_selection, img_dir, results_dir):
     win_function(img_dir, function_name, fun_txt)
 
 
-def launch_agisoft_reconstruction(outputs_selection, img_dir, results_dir, markers_path=''):
+def launch_agisoft_reconstruction(outputs_selection, img_dir, results_dir, markers_path='', do_precleaning = False, quality = 'high', nb_text = 1, text_size = 4096):
     import Metashape
+
+    def pre_cleaning(chk):
+        reperr = 0.3
+        recunc = 35
+        projacc = 10
+
+        f = Metashape.PointCloud.Filter()
+        f.init(chk, Metashape.PointCloud.Filter.ReprojectionError)
+        f.removePoints(reperr)
+        f.init(chk, Metashape.PointCloud.Filter.ReconstructionUncertainty)
+        f.removePoints(recunc)
+        f.init(chk, Metashape.PointCloud.Filter.ProjectionAccuracy)
+        f.removePoints(projacc)
+        chk.optimizeCameras()
+
     print('RUNNING AGISOFT RECONSTRUCTION')
     # file names
     model_rgb_file = results_dir.joinpath('texturedMesh.obj')
-    if outputs_selection == 2:
-        ortho_rgb_file = results_dir.joinpath('ortho_rgb.tif')
+    pc_file = results_dir.joinpath('pointCloud.las')
+    ortho_rgb_file = results_dir.joinpath('ortho_rgb.tif')
 
     # new project
     doc = Metashape.Document()
@@ -151,32 +166,61 @@ def launch_agisoft_reconstruction(outputs_selection, img_dir, results_dir, marke
         photo_list.append("/".join([str(img_dir), photo]))
     chk.addPhotos(photo_list)
 
-    # proces RGB images
+    # process RGB images - general steps
     chk.matchPhotos(guided_matching=True, generic_preselection=False, reference_preselection=False)
     chk.alignCameras()
-    chk.buildDepthMaps()
-    chk.buildModel(source_data=Metashape.DataSource.DepthMapsData, face_count=Metashape.HighFaceCount)
-    chk.buildUV(mapping_mode=Metashape.GenericMapping)
-    chk.buildTexture(texture_size=4096)  # optional argument to change texture size
+
+    # check if tie points cleaning is required
+    if do_precleaning:
+        pre_cleaning(chk)
+
+    # choose quality
+    if quality == 'medium':
+        quality_factor = Metashape.MediumFaceCount
+        downscale_factor = 4
+    elif quality == 'high':
+        quality_factor = Metashape.MediumFaceCount
+        downscale_factor = 2
+
+    chk.buildDepthMaps(downscale=downscale_factor)
+
+    # check what outputs are needed
+    if outputs_selection == 0:  # point cloud
+        chk.buildDenseCloud(point_confidence=True)
+    elif outputs_selection == 1 or outputs_selection == 2:
+        chk.buildModel(source_data=Metashape.DataSource.DepthMapsData, face_count=quality_factor)
+        chk.buildUV(mapping_mode=Metashape.GenericMapping, page_count=nb_text, texture_size=text_size)
+        chk.buildTexture()
+
+    elif outputs_selection == 3:
+        chk.buildDenseCloud(point_confidence=True)
+        chk.buildModel(source_data=Metashape.DataSource.DepthMapsData, face_count=quality_factor)
+        chk.buildUV(mapping_mode=Metashape.GenericMapping, page_count=nb_text, texture_size=text_size)
+        chk.buildTexture()
 
     # use markers if necessary
     if markers_path:
         chk.detectMarkers()
         chk.importReference(path=str(markers_path), format=Metashape.ReferenceFormatCSV, delimiter=';', columns='nxyz')
         chk.updateTransform()
+        if outputs_selection == 2: #ortho creation
+            chk.buildOrthomosaic(surface_data=Metashape.ModelData)
+            chk.exportRaster(ortho_rgb_file)
 
     Metashape.app.update()
 
+    # export point cloud
+    if outputs_selection == 0 or outputs_selection ==3:
+        chk.exportPoints(path=str(pc_file), source_data=Metashape.DenseCloudData, format=Metashape.FormatLAS)
+
     # export rgb model (mesh)
-    chk.exportModel(path=str(model_rgb_file), save_normals=False, texture_format=Metashape.ImageFormatPNG, save_texture=True, save_uv=True, save_markers=False)
+    if outputs_selection == 1 or outputs_selection ==3:
+        chk.exportModel(path=str(model_rgb_file), save_normals=False, texture_format=Metashape.ImageFormatPNG, save_texture=True, save_uv=True, save_markers=False)
 
     doc.save()
-    # make ortho if needed
-    if outputs_selection == 2:
-        chk.buildOrthomosaic(surface_data=Metashape.ModelData)
-        chk.exportRaster(ortho_rgb_file)
 
-    # avoiding bad allocation error
+    # Add process to rotate mesh if no markers
+
 
 
 def launch_realitycapture_reconstruction(outputs_selection, img_dir, rc_path, results_dir):
