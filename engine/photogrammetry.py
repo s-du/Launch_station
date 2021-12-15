@@ -50,27 +50,11 @@ Reconstruction functions
 ======================================================================================
 """
 
-def launch_3D_reconstruction(software, outputs_selection, img_dir, options):
-    """
-    Function to dispatch the reconstruction to a specific software, with specific outputs
-    :param i:
-    :param j:
-    :param img_dir:
-    :return:
-    """
-    if software == 0:
-        launch_meshroom_reconstruction(outputs_selection, img_dir, options[0], options[1], markers_path = options[2])
-    elif software == 1:
-        launch_odm_reconstruction(outputs_selection, img_dir, options[0], options[1])
-    elif software == 2:
-        pass
-    elif software == 3:
-        launch_agisoft_reconstruction(outputs_selection, img_dir, options[0], markers_path = options[1])
-    elif software == 4:
-        launch_realitycapture_reconstruction(outputs_selection, img_dir, options[0], options[1])
+def launch_meshroom_reconstruction(outputs_selection, img_dir, options):
+    meshroom_path = options[0]
+    results_dir = options[1]
+    markers_path = options[2]
 
-
-def launch_meshroom_reconstruction(outputs_selection, img_dir, meshroom_path, results_dir, markers_path=''):
     function_name = 'run_meshroom'
     print('RUNNING MESHROOM RECONSTRUCTION')
 
@@ -81,8 +65,10 @@ def launch_meshroom_reconstruction(outputs_selection, img_dir, meshroom_path, re
     win_function(img_dir, function_name, fun_txt)
 
 
-def launch_odm_reconstruction(outputs_selection, img_dir, odm_path, project_dir):
-    function_name = 'run_odm'
+def launch_odm_reconstruction(outputs_selection, img_dir, options):
+    odm_path = options[0]
+    project_dir = options[1]
+
     print('RUNNING ODM RECONSTRUCTION')
 
     project_name = TOOL_LIST[1]
@@ -128,7 +114,16 @@ def launch_micmac_reconstruction(outputs_selection, img_dir, results_dir):
     win_function(img_dir, function_name, fun_txt)
 
 
-def launch_agisoft_reconstruction(outputs_selection, img_dir, results_dir, markers_path='', do_precleaning = False, quality = 'high', nb_text = 1, text_size = 4096):
+def launch_agisoft_reconstruction(outputs_selection, img_dir, options):
+
+    results_dir = options[0]
+    markers_path = options[1]
+    do_precleaning = options[2]
+    quality = options[3]
+    nb_text = options[4]
+    text_size = options[5]
+
+
     import Metashape
 
     def pre_cleaning(chk):
@@ -223,7 +218,10 @@ def launch_agisoft_reconstruction(outputs_selection, img_dir, results_dir, marke
 
 
 
-def launch_realitycapture_reconstruction(outputs_selection, img_dir, rc_path, results_dir):
+def launch_realitycapture_reconstruction(outputs_selection, img_dir, options):
+    rc_path = options[0]
+    results_dir = options[1]
+
     function_name = 'run_rc'
     print('RUNNING REALITY CAPTURE RECONSTRUCTION')
     model_name = '"Model 1"'

@@ -63,19 +63,16 @@ class dialog_agisoft(QtWidgets.QDialog):
         uifile = os.path.join(basepath, 'ui/%s.ui' % basename)
         PyQt5.uic.loadUi(uifile, self)
 
-        # initialize variables
-
-        # Initialize combobox
-        # Fill comboboxes
-        self.qual_list = ['Medium', 'High']
-        self.comboBox_qual.addItems(self.colormap_list)
-
-        self.res_list = ['2048', '4096', '8192']
-        self.comboBox_res.addItems(self.colormap_list)
-
         self.pushButton_browse.clicked.connect(self.get_gcp)
         self.buttonBox.accepted.connect(self.accept)
         self.buttonBox.rejected.connect(self.reject)
+
+    def fill_combos(self, qual_list, text_list):
+        self.qual_list = qual_list
+        self.text_list = text_list
+        self.comboBox_qual.addItems(self.qual_list)
+        self.comboBox_res.addItems(self.res_list)
+
 
     def get_gcp(self):
         pass
@@ -110,7 +107,7 @@ class LaunchStation(QtWidgets.QMainWindow):
         self.batch_operations = []
 
         # add icon
-        astro = res.find('imgs/astronaut_small.png')
+        astro = res.find('imgs/astronaut_small_tr.png')
         self.pushButton_go.setIcon(QtGui.QIcon(astro))
         self.pushButton_go.setStyleSheet("background-color: #B9B9B9")
 
@@ -307,17 +304,24 @@ class LaunchStation(QtWidgets.QMainWindow):
         # get software options
         if soft == 0:  # Meshroom
             options = [self.paths[0], results_dir_windows, ''] # the '' should be replaced with markers txt file path
+            ph.launch_meshroom_reconstruction(outputs, img_dir_windows, options)
         # ______________________________________________
 
         if soft == 1:  # ODM
             options = [self.paths[1], out_dir_windows]
+            ph.launch_odm_reconstruction(outputs, img_dir_windows, options)
         # ______________________________________________
 
         if soft == 2:  # MicMac
             pass
         # ______________________________________________
 
-        if soft == 3:  # Agisoft
+        if soft == 3:  # RealityCapture
+            options = [self.paths[3], results_dir_windows]
+            ph.launch_realitycapture_reconstruction(outputs, img_dir_windows, options)
+        # ______________________________________________
+
+        if soft == 4:  # Agisoft
             # check if module is installed
             required = {'metashape'}
             installed = {pkg.key for pkg in pkg_resources.working_set}
@@ -333,23 +337,32 @@ class LaunchStation(QtWidgets.QMainWindow):
 
             if dialog.exec_():
                 try:
+                    do_precleaning = True
+                    qual_list = ['Medium', 'High']
+                    text_list = ['2048', '4096', '8192']
+                    dialog.fill_combos(qual_list, text_list)
                     nb_text = int(dialog.lineEdit_nb_text.text())
-                    qual = dialog.comboBox_qual.currentIndex()
+                    qual_idx = dialog.comboBox_qual.currentIndex()
+                    qual = qual_list[qual_idx]
+
+                    text_size_idx = dialog.comboBox_res.currentIndex()
+                    text_size = text_list[text_size_idx]
+
+                    if not dialog.checkBox_clean.isChecked():
+                        do_precleaning = False
 
                 except ValueError:
                     QtWidgets.QMessageBox.warning(self, "Warning",
                                                   "Oops! The number of texture is not valid.  Try again...")
                     self.dialog_agisoft()
 
-            options = [results_dir_windows, '']
+            options = [results_dir_windows, '', do_precleaning, qual, nb_text, text_size]
+            ph.launch_agisoft_reconstruction(outputs, img_dir_windows, options)
         # ______________________________________________
 
-        if soft == 4:  # RealityCapture
-            options = [self.paths[3], results_dir_windows]
 
         # launch reconstruction
-        ph.launch_3D_reconstruction(soft, outputs, img_dir_windows,
-                                    options)  # i = software name, j = required outputs, options are software dependant
+        ph.launch_3D_reconstruction(soft, outputs, img_dir_windows, options)
 
     def install_agisoft_module(self):
         # install Metashape module if necessary
